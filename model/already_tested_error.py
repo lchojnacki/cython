@@ -1,0 +1,2 @@
+class AlreadyTestedError(AttributeError):
+    pass

@@ -1,5 +1,4 @@
-from figures.point import Point
-from figures.line import Line
+from convex_hull import Point
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import numpy as np
@@ -70,12 +69,7 @@ def test(number_of_points):
     for i in range(number_of_points):
         points[i] = np.random.uniform(-10, 10), np.random.uniform(-10, 10)
 
-    start = timer()
     hull_points = convex_hull_np_array(points)
-    end = timer()
-
-    print("Convex Hull (NumPy); " + str(number_of_points) + " points: " +
-          str(end - start) + "s")
 
 
 def profile_function_np(number_of_points):

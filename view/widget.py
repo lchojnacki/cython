@@ -126,11 +126,10 @@ class MainWidget(QWidget):
 
         self.table_widget = QTableWidget()
         self.table_widget.setRowCount(0)
-        self.table_widget.setColumnCount(2)
-        self.table_widget.setHorizontalHeaderLabels(["Python", "Cython"])
+        self.table_widget.setColumnCount(1)
+        self.table_widget.setHorizontalHeaderLabels([""])
         header = self.table_widget.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
 
         self.layout.addWidget(self.table_widget)
 
@@ -141,19 +140,26 @@ class MainWidget(QWidget):
     def checkbox_action(self, state):
         self._mediator.update(self.sender().text(), state)
 
-    def run_action(self):
+    def run_action(self, dont_ask_for_clearing=False, ignore_error=False):
         if self.samples_line.text()[-1] == ",":
             self.samples_line.setText(self.samples_line.text()[:-1])
+        if len(self.plot.ax.lines) > 0 and not dont_ask_for_clearing:
+            answer = QMessageBox.question(self, "Message", "Do You want to clear the plot before tests?",
+                                       QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            if answer == QMessageBox.Yes:
+                self.plot.clear_plot()
+            else:
+                pass
         try:
             get_modules(self.samples_line.text(),
                         self.py_path.text() if self._mediator.checks["Run Python"].isChecked() else "",
-                        self.cy_path.text() if self._mediator.checks["Run Cython"].isChecked() else "")
+                        self.cy_path.text() if self._mediator.checks["Run Cython"].isChecked() else "", ignore_error)
         except AlreadyTestedError as e:
             msg = QMessageBox.question(self, "Message", str(e),
-                                       QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if msg == QMessageBox.Yes:
-                self.plot.clear_plot()
-                self.run_action()
+                # self.plot.clear_plot()
+                self.run_action(True, True)
             else:
                 pass
         except AttributeError as e:
@@ -164,8 +170,33 @@ class MainWidget(QWidget):
             self._mediator.checks["Run Python"].setChecked(False)
         if self.cy_path.text() == "":
             self._mediator.checks["Run Cython"].setChecked(False)
+        self.fill_table()
 
-        loops, py_data, cy_data = None, None, None
+    def fill_table(self):
+        self.table_widget.clear()
+        row_labels = self.plot.ax.lines[0].get_xdata()
+        #print(f"row_labels: {row_labels}")
+        self.table_widget.setRowCount(row_labels.shape[0])
+        self.table_widget.setVerticalHeaderLabels(row_labels.astype('str'))
+        col_num = len(self.plot.ax.lines) // 2
+        #print(f"col_num: {col_num}")
+        self.table_widget.setColumnCount(col_num)
+        header_labels = self.plot.ax.get_legend_handles_labels()[1]
+        #print(f"header_labels: {header_labels}")
+        self.table_widget.setHorizontalHeaderLabels(header_labels)
+        header = self.table_widget.horizontalHeader()
+        for i in range(col_num):
+            header.setSectionResizeMode(i, QHeaderView.ResizeToContents)
+            data = self.plot.ax.lines[2*i].get_ydata()
+            #print(f"data: {data}")
+            for j in range(row_labels.shape[0]):
+                #print(str(round(data[j], 5)) + " s")
+                item = QTableWidgetItem(str(round(data[j], 5)) + " s")
+                #print(type(item))
+                self.table_widget.setItem(j, i, item)
+                #print(self.table_widget.item(j, i).text())
+
+        """loops, py_data, cy_data = None, None, None
         if len(self.plot.ax.lines) == 2:
             loops = self.plot.ax.lines[0].get_xdata()
             if self._mediator.checks["Run Python"].isChecked() and self.py_path.text() != "":
@@ -173,19 +204,21 @@ class MainWidget(QWidget):
             elif self._mediator.checks["Run Cython"].isChecked() and self.cy_path.text() != "":
                 cy_data = self.plot.ax.lines[0].get_ydata()
         else:
-            loops = self.plot.ax.lines[0].get_xdata()
-            py_data = self.plot.ax.lines[0].get_ydata()
-            cy_data = self.plot.ax.lines[2].get_ydata()
+            loops = self.plot.ax.lines[-3].get_xdata()
+            py_data = self.plot.ax.lines[-3].get_ydata()
+            cy_data = self.plot.ax.lines[-1].get_ydata()
 
         if loops is not None:
             self.table_widget.setRowCount(loops.shape[0])
             self.table_widget.setVerticalHeaderLabels(loops.astype('str'))
         if py_data is not None:
+            self.table_widget.setColumnCount(self.table_widget.columnCount() + 1)
+            self.table_widget.setHorizontalHeaderLabels(self.plot.ax.get_legend_handles_labels()[1])
             for i in range(loops.shape[0]):
                 self.table_widget.setItem(i, 0, QTableWidgetItem(str(round(py_data[i], 5)) + " s"))
         if cy_data is not None:
             for i in range(loops.shape[0]):
-                self.table_widget.setItem(i, 1, QTableWidgetItem(str(round(cy_data[i], 5)) + " s"))
+                self.table_widget.setItem(i, 1, QTableWidgetItem(str(round(cy_data[i], 5)) + " s"))"""
 
     def open_file_dialog(self, version):
         options = QFileDialog.Options()

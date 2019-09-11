@@ -72,29 +72,13 @@ cdef void draw_convex_hull(Point *points, list hull_points, int number_of_points
     plt.show()
 
 
-cpdef void test(list p_list, bint draw = False):
-    cdef int number_of_points = len(p_list)
+cpdef void test(int number_of_points):
     cdef Point *points = <Point*>malloc(number_of_points * sizeof(Point))
     cdef int i
     for i in range(number_of_points):
-        points[i] = Point(p_list[i][0], p_list[i][1])
-        #points[i] = Point(np.random.uniform(-10, 10), np.random.uniform(-10, 10))
+        points[i] = Point(np.random.uniform(-10, 10), np.random.uniform(-10, 10))
 
-    cdef float start = timer()
     cdef list hull_points = convex_hull(points, number_of_points)
-    cdef float end = timer()
-
-    print("Time of convex_hull function execution (structs), " + str(number_of_points) + " points: " +
-        str(end - start) + "s")
-
-    file = open("../cython.log", 'a+')
-    now = datetime.now()
-    file.write(now.strftime("%Y-%m-%d %H:%M:%S") + "\tconvex_hull_structs\t" +
-                str(number_of_points) + " points\t" +
-                str(end - start) + "s\n")
-    file.close()
-    if draw != 0:
-        draw_convex_hull(points, hull_points, number_of_points)
     
     free(points)
 

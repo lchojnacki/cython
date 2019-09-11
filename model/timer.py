@@ -5,6 +5,7 @@ from model.already_tested_error import AlreadyTestedError
 from view.progbar import ProgressBar
 import os
 import sys
+import time
 
 
 class Timer:
@@ -15,11 +16,14 @@ class Timer:
         self.spec = spec
         self.module = module
 
-    def __call__(self, samples):
+    def __call__(self, samples, ignore_error=False):
         plot = PlotCanvas.get_instance()
         name = self.module.__name__
         if name in plot.ax.get_legend_handles_labels()[1]:
-            raise AlreadyTestedError("At least one of the functions has already been tested. Test again?")
+            if ignore_error:
+                name += time.strftime("_%H:%M:%S")
+            else:
+                raise AlreadyTestedError("At least one of the functions has already been tested. Test again?")
         times = []
         loops = 100
         for n in samples:

@@ -90,31 +90,14 @@ cpdef void draw_convex_hull(np.ndarray points, list hull_points):
     plt.show()
 
 
-cpdef void test(list p_list, bint draw = False):
-    cdef int number_of_points = len(p_list)
+cpdef void test(int number_of_points):
     cdef np.ndarray points = np.zeros((number_of_points, 2))
     cdef int i
     for i in range(number_of_points):
-        points[i][0] = p_list[i][0]
-        points[i][1] = p_list[i][1]
+        points[i] = np.random.uniform(-10, 10), np.random.uniform(-10, 10)
 
-    cdef float start = timer()
     cdef np.ndarray p = points[points[:, 0].argsort()]
-    cdef list hull_points = convex_hull(p)#convex_hull(points)
-    cdef float end = timer()
-
-    print("Time of convex_hull function execution (MV), " + str(number_of_points) + " points: " +
-          str(end - start))
-
-    file = open("../cython.log", 'a+')
-    now = datetime.now()
-    file.write(now.strftime("%Y-%m-%d %H:%M:%S") + "\tconvex_hull_mv\t" +
-               str(number_of_points) + " points\t" +
-               str(end - start) + "s\n")
-    file.close()
-
-    if draw != 0:
-        draw_convex_hull(points, hull_points)
+    cdef list hull_points = convex_hull(p)
 
 
 cpdef void test_old(list p_list, bint draw = False):

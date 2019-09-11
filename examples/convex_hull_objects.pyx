@@ -3,14 +3,66 @@
 # cython: linetrace=True
 # cython: binding=True
 
-cimport figures.point
-from figures.point cimport Point
+#cimport figures.point
+#from figures.point cimport Point
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import numpy as np
 import line_profiler
 from datetime import datetime
 from timeit import default_timer as timer
+
+
+from libc.math cimport sqrt
+
+
+cdef class Point:
+    cdef public double x, y
+    cdef public int n
+    def __init__(self, double _x=0, double _y=0):
+        self.x = _x
+        self.y = _y
+        self.n = 0
+
+    def __gt__(self, Point other):
+        # No need of __richcmp__: New from Cython 0.27
+        return self.x > other.x if self.x != other.x else self.y > other.y
+
+    def __lt__(self, Point other):
+        # No need of __richcmp__: New from Cython 0.27
+        return self.x < other.x if self.x != other.x else self.y < other.y
+
+    def __eq__(self, Point other):
+        # No need of __richcmp__: New from Cython 0.27
+        return self.x == other.x and self.y == other.y
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.n == 0:
+            self.n += 1
+            return self.x
+        elif self.n == 1:
+            self.n += 1
+            return self.y
+        else:
+            raise StopIteration
+
+    def __getitem__(self, index):
+        if index == 0:
+            return self.x
+        elif index == 1:
+            return self.y
+
+    cpdef double distance(self, Point point=None):
+        """Calculates distance between two points.
+        If no argument given, calculates distance from the origin of a Euclidean space."""
+        if not isinstance(point, Point):
+            point = Point()
+        cdef double result = sqrt((point.x - self.x)**2 + (point.y - self.y)**2)
+        return result
+
 
 
 cpdef bint turn_right(Point p1, Point p2, Point p3):
@@ -59,29 +111,13 @@ cpdef void draw_convex_hull(list points, list hull_points):
     plt.show()
 
 
-cpdef void test(list p_list, bint draw = False):
-    cdef int number_of_points = len(p_list)
+cpdef void test(int number_of_points):
     cdef list points = []
     cdef int i
     for i in range(number_of_points):
-        points.append(Point(p_list[i][0], p_list[i][1]))
-        #points.append(Point(np.random.uniform(-10, 10), np.random.uniform(-10, 10)))
+        points.append(Point(np.random.uniform(-10, 10), np.random.uniform(-10, 10)))
 
-    cdef float start = timer()
     cdef list hull_points = convex_hull(points)
-    cdef float end = timer()
-
-    print("Time of convex_hull function execution (objects), " + str(number_of_points) + " points: " +
-        str(end - start) + "s")
-
-    file = open("../cython.log", 'a+')
-    now = datetime.now()
-    file.write(now.strftime("%Y-%m-%d %H:%M:%S") + "\tconvex_hull_objects\t" +
-                str(number_of_points) + " points\t" +
-                str(end - start) + "s\n")
-    file.close()
-    if draw != 0:
-        draw_convex_hull(points, hull_points)
 
 
 def profile_function(list p_list):

@@ -27,39 +27,32 @@ class ResultsSaver(ABC):
         if ok_pressed and file_name != '':
             plot = PlotCanvas.get_instance()
 
-            if widget._mediator.checks["Run Python"].isChecked():
-                lines = plot.ax.lines[0].get_xdata()
-                py_data = plot.ax.lines[0].get_ydata()
-                if widget._mediator.checks["Run Cython"].isChecked():
-                    cy_data = plot.ax.lines[2].get_ydata()
-                else:
-                    cy_data = np.full(len(lines), None)
-            elif widget._mediator.checks["Run Cython"].isChecked():
-                lines = plot.ax.lines[0].get_xdata()
-                py_data = np.full(len(lines), None)
-                cy_data = plot.ax.lines[0].get_ydata()
-            else:
-                lines = np.array(None)
-                py_data = np.array(None)
-                cy_data = np.array(None)
+            data = [plot.ax.lines[0].get_xdata()]
+
+            for i in range(len(plot.ax.lines) // 2):
+                data.append([])
+                data[i+1] = plot.ax.lines[2*i].get_ydata()
+
+            labels_list = plot.ax.get_legend_handles_labels()[1]
+            labels = "sample size;" + ";".join(labels_list)
             
-            self.save_results(file_name, [lines, py_data, cy_data])
+            self.save_results(file_name, [d for d in data], labels)
 
     @abstractmethod
-    def save_results(self, file_name, data):
+    def save_results(self, file_name, data, labels):
         pass
 
 
 class CsvSaver(ResultsSaver):
-    def save_results(self, file_name, data): 
+    def save_results(self, file_name, data, labels): 
         np.savetxt(file_name + ".csv", np.column_stack(data),
-                   delimiter=",", fmt='%s', header="arg, python, cython")
+                   delimiter=",", fmt='%s', header=labels)
 
 
 class TxtSaver(ResultsSaver):
-    def save_results(self, file_name, data):
+    def save_results(self, file_name, data, labels):
         np.savetxt(file_name + ".txt", np.column_stack(data),
-                   delimiter=";", fmt='%s', header="arg, python, cython")
+                   delimiter=";", fmt='%s', header=labels)
 
 
 class PdfSaver(ResultsSaver):
